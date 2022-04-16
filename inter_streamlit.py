@@ -6,11 +6,9 @@ import numpy as np
 import re 
 from collections import defaultdict
 import pandas as pd
-import openpyxl
-st.title("University recommender app")
-st.write(
-    "A simple machine laerning app to predict the sentiment of a movie's review"
-)
+import folium
+from streamlit_folium import folium_static
+
 
 
 #mean vectorizer
@@ -88,13 +86,6 @@ class TfidfEmbeddingVectorizer(object):
     def doc_average_list(self, docs):
       return np.vstack([self.doc_average(doc) for doc in docs])
 
-
-
-
-form = st.form(key="my_form")
-sentence = form.text_input(label="Enter the text to indicate ur university preferences")
-submit = form.form_submit_button(label="Find Universities")
-
 @st.cache(allow_output_mutation=True)
 def load_data(check): 
     if check: 
@@ -104,21 +95,13 @@ def load_data(check):
         swords = pd.read_pickle('swords.pickle')
     return data, embeddings, clean_words, swords
 
-data, doc_vec, clean_words, swords = load_data(True)
-
-@st.cache(allow_output_mutation=True)
-def corpus_l(data):
-    return list(data)
+# @st.cache(allow_output_mutation=True)
+# def corpus_l(data):
+#     return list(data)
 
 @st.cache(allow_output_mutation=True)
 def load_model(mpath): 
     return Word2Vec.load(mpath)
-
-corpus = corpus_l(clean_words)
-model = load_model('model_cbow.bin')    
-model.init_sims(replace=True)
-tfidf_vec_tr = TfidfEmbeddingVectorizer(model)
-tfidf_vec_tr.fit(corpus)
 
 
 
@@ -168,9 +151,47 @@ def get_recs(sentence, N=5, mean=False):
     recommendations = get_recommendations(N,scores)
     return recommendations
 
-if submit:
+
+with st.sidebar:
+    col1, col2 =st.columns([2.2,6])
+    with col1:
+        st.write("")
+    with col2:
+        st.write("")  #st.image('logo.png')
+    page = st.radio('Страница', ['Приветствие','Поиск программ','Интересная статистика','Карта'])
+
+
+# Page 1-Intro
+if page=='Приветствие':
+  #  st.markdown(dash, unsafe_allow_html = True)
+    st.subheader('Приветствие')
+   # st.markdown(hello, unsafe_allow_html = True)
+
+if page=='Поиск программ':
+    st.title("University recommender app")
+    st.write(
+    "A simple grad school recommender")
+    form = st.form(key="my_form")
+    sentence = form.text_input(label="Enter the text to indicate ur university preferences")
+    submit = form.form_submit_button(label="Find Universities")
+    data, doc_vec, clean_words, swords = load_data(True)
+    corpus = list(clean_words)
+    model = load_model('model_cbow.bin')
+    model.init_sims(replace=True)
+    tfidf_vec_tr = TfidfEmbeddingVectorizer(model)
+    tfidf_vec_tr.fit(corpus)
+    if submit:
     # make prediction from the input text
-    recs = get_recs(sentence)
+        recs = get_recs(sentence)
  
     # Display results of the NLP task
-    st.dataframe(recs)
+        st.dataframe(recs)
+if page == 'Интересная статистика':
+    st.title('Здесь должна быть описательная статистика')
+if page == 'Карта':
+    my_map = folium.Map()
+    folium.Marker(
+    location=[51.5074,0.1278]
+    ).add_to(my_map)
+    folium_static(my_map)
+    
